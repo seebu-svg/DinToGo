@@ -125,6 +125,10 @@ const Restaurant = sequelize.define('Restaurant', {
     type: DataTypes.ARRAY(DataTypes.STRING),
     defaultValue: [],
   },
+  menuItems: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    defaultValue: [],
+  },
   dietaryOptions: {
     type: DataTypes.ARRAY(DataTypes.STRING),
     defaultValue: [],

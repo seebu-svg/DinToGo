@@ -124,4 +124,33 @@ const deleteReview = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, message: 'Review deleted.' });
 });
 
-module.exports = { getReviews, createReview, toggleHelpful, deleteReview };
+const respondToReview = asyncHandler(async (req, res) => {
+  const { response } = req.body;
+  const review = await Review.findByPk(req.params.id);
+  if (!review) throw new AppError('Review not found.', 404);
+
+  // Verify user owns the restaurant this review is for
+  if (review.restaurantId) {
+    const restaurant = await Restaurant.findOne({
+      where: { id: review.restaurantId, ownerId: req.user.id },
+    });
+    if (!restaurant && req.user.role !== 'admin') {
+      throw new AppError('Not authorized to respond to this review.', 403);
+    }
+  } else if (review.dinnerId) {
+    const dinner = await Dinner.findOne({
+      where: { id: review.dinnerId, hostId: req.user.id },
+    });
+    if (!dinner && req.user.role !== 'admin') {
+      throw new AppError('Not authorized to respond to this review.', 403);
+    }
+  }
+
+  review.ownerResponse = response;
+  review.respondedAt = new Date();
+  await review.save();
+
+  res.status(200).json({ success: true, data: review });
+});
+
+module.exports = { getReviews, createReview, toggleHelpful, deleteReview, respondToReview };

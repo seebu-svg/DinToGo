@@ -174,7 +174,7 @@ const DiscoverPage = () => {
     tag: d.isInfluencerHosted ? 'Influencer Hosted' : d.category === 'fine-dining' ? 'Trending' : d.category === 'themed' ? 'Popular' : null,
     tagColor: d.isInfluencerHosted ? 'purple' : d.category === 'fine-dining' ? 'orange' : 'orange',
     coverImage: d.coverImage || 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&h=400&fit=crop',
-    host: { name: d.host?.name || 'Host', verified: d.host?.role === 'influencer', avatar: d.host?.avatar },
+    host: { name: d.host?.name || 'Host', verified: !!d.host?.influencerData, avatar: d.host?.avatar },
     coHosts: [],
     extraGuests: Math.max(0, (d.currentGuests || 1) - 4),
     location: d.location || { venue: 'TBA', city: '' },
@@ -511,7 +511,7 @@ const DiscoverPage = () => {
                         {u.bio && <p className="text-xs text-charcoal-400 mt-1 line-clamp-2">{u.bio}</p>}
                         <div className="flex items-center justify-center gap-3 mt-3 text-xs text-charcoal-500">
                           <span>{u.followerCount || 0} followers</span>
-                          {u.role === 'influencer' && <span className="badge-orange text-[10px]">Influencer</span>}
+                          {u.influencerData && <span className="badge-orange text-[10px]">Creator</span>}
                         </div>
                         <button className="mt-3 w-full text-brand-500 text-xs font-semibold py-2 rounded-xl border border-brand-200 hover:bg-brand-50 transition-colors">View Profile</button>
                       </Link>

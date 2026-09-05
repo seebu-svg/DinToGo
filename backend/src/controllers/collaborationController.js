@@ -7,7 +7,8 @@ const getCollaborations = asyncHandler(async (req, res) => {
   if (req.user.role === 'restaurant') {
     const restaurant = await Restaurant.findOne({ where: { ownerId: req.user.id } });
     if (restaurant) where.restaurantId = restaurant.id;
-  } else if (req.user.role === 'influencer') {
+  } else if (req.user.influencerData) {
+    // User is a creator (has influencerData)
     where.influencerId = req.user.id;
   }
 

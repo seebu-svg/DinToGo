@@ -7,6 +7,7 @@ const { reviewRules } = require('../utils/validators');
 router.get('/', reviewController.getReviews);
 router.post('/', protect, reviewRules, reviewController.createReview);
 router.post('/:id/helpful', protect, reviewController.toggleHelpful);
+router.post('/:id/respond', protect, reviewController.respondToReview);
 router.delete('/:id', protect, reviewController.deleteReview);
 
 module.exports = router;

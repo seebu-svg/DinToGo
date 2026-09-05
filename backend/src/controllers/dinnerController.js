@@ -85,7 +85,8 @@ const createDinner = asyncHandler(async (req, res) => {
     dinnerData.inviteCode = crypto.randomBytes(6).toString('hex');
   }
 
-  if (req.user.role === 'influencer') {
+  // Check if user is a creator (has influencerData)
+  if (req.user.influencerData) {
     dinnerData.isInfluencerHosted = true;
     dinnerData.influencerHostId = req.user.id;
     dinnerData.category = 'influencer';

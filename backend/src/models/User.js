@@ -23,8 +23,8 @@ const User = sequelize.define('User', {
     validate: { len: [8, 255] },
   },
   role: {
-    type: DataTypes.ENUM('customer', 'influencer', 'restaurant', 'admin'),
-    defaultValue: 'customer',
+    type: DataTypes.ENUM('user', 'restaurant', 'admin'),
+    defaultValue: 'user',
   },
   avatar: {
     type: DataTypes.STRING(500),

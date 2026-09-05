@@ -15,15 +15,11 @@ const register = asyncHandler(async (req, res) => {
 
   const userData = { name, email, password, bio, location, phone };
 
-  if (role === 'influencer') {
-    userData.role = 'influencer';
-    userData.influencerData = {
-      inviteCode: crypto.randomBytes(6).toString('hex'),
-    };
-  } else if (role === 'restaurant') {
+  // Restaurant partners get their own role; everyone else is a 'user'
+  if (role === 'restaurant') {
     userData.role = 'restaurant';
   } else {
-    userData.role = 'customer';
+    userData.role = 'user';
   }
 
   const user = await User.create(userData);

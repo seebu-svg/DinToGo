@@ -555,7 +555,7 @@ const DinnerDetailPage = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <p className="font-semibold text-charcoal-900">{dinner.host.name}</p>
-                        {dinner.host.role === 'influencer' && <UserCheck size={12} className="text-blue-500" />}
+                        {dinner.host.influencerData && <UserCheck size={12} className="text-blue-500" />}
                       </div>
                       {dinner.host.bio && <p className="text-xs text-charcoal-400 line-clamp-1">{dinner.host.bio}</p>}
                     </div>

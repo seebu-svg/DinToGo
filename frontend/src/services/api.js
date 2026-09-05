@@ -8,9 +8,9 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Request interceptor — attach token
+// Request interceptor — attach token from sessionStorage (per-tab isolation)
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('dintogo_token');
+  const token = sessionStorage.getItem('dintogo_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -22,8 +22,8 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('dintogo_token');
-      localStorage.removeItem('dintogo_user');
+      sessionStorage.removeItem('dintogo_token');
+      sessionStorage.removeItem('dintogo_user');
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
@@ -51,7 +51,7 @@ export const dinnersAPI = {
   delete: (id) => api.delete(`/dinners/${id}`),
   join: (id, data) => api.post(`/dinners/${id}/join`, data),
   leave: (id) => api.post(`/dinners/${id}/leave`),
-  myHosted: () => api.get('/dinners/my/hosted'),
+  myHostedDinners: () => api.get('/dinners/my/hosted'),
   myAttending: () => api.get('/dinners/my/attending'),
 };
 
@@ -63,6 +63,7 @@ export const restaurantsAPI = {
   update: (id, data) => api.put(`/restaurants/${id}`, data),
   delete: (id) => api.delete(`/restaurants/${id}`),
   getMy: () => api.get('/restaurants/my/profile'),
+  getCustomers: () => api.get('/restaurants/my/customers'),
 };
 
 // ── Reservations ──────────────────────────────────
@@ -89,6 +90,7 @@ export const reviewsAPI = {
   getAll: (params) => api.get('/reviews', { params }),
   create: (data) => api.post('/reviews', data),
   toggleHelpful: (id) => api.post(`/reviews/${id}/helpful`),
+  respond: (id, data) => api.post(`/reviews/${id}/respond`, data),
   delete: (id) => api.delete(`/reviews/${id}`),
 };
 

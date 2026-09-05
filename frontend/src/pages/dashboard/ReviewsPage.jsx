@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
 import { reviewsAPI, restaurantsAPI } from '../../services/api';
 import EmptyState from '../../components/EmptyState';
-import { Star, ThumbsUp, Loader } from 'lucide-react';
+import { Star, ThumbsUp, Loader, MessageSquare, Send, X } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const ReviewsPage = () => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [respondingTo, setRespondingTo] = useState(null);
+  const [responseText, setResponseText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => { fetchReviews(); }, []);
 
@@ -16,6 +20,22 @@ const ReviewsPage = () => {
       setReviews(data.data || []);
     } catch { /* silent */ }
     finally { setLoading(false); }
+  };
+
+  const handleRespond = async (reviewId) => {
+    if (!responseText.trim()) return;
+    setSubmitting(true);
+    try {
+      await reviewsAPI.respond(reviewId, { response: responseText });
+      toast.success('Response posted!');
+      setRespondingTo(null);
+      setResponseText('');
+      fetchReviews();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to post response');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const renderStars = (rating) => (
@@ -67,7 +87,56 @@ const ReviewsPage = () => {
                     <ThumbsUp size={14} className="text-charcoal-400" />
                     <span className="text-xs text-charcoal-400">{review.helpfulCount} found helpful</span>
                     {review.isVerified && <span className="badge bg-green-50 text-green-600 text-xs">Verified</span>}
+                    {!review.ownerResponse && (
+                      <button
+                        onClick={() => { setRespondingTo(review.id); setResponseText(''); }}
+                        className="text-xs text-brand-500 font-medium hover:underline flex items-center gap-1 ml-auto"
+                      >
+                        <MessageSquare size={12} /> Respond
+                      </button>
+                    )}
                   </div>
+
+                  {/* Owner Response */}
+                  {review.ownerResponse && (
+                    <div className="mt-3 p-3 bg-brand-50 rounded-xl border-l-2 border-brand-500">
+                      <p className="text-xs font-semibold text-brand-700 mb-1">Your Response</p>
+                      <p className="text-sm text-charcoal-600">{review.ownerResponse}</p>
+                      {review.respondedAt && (
+                        <p className="text-xs text-charcoal-400 mt-1">{new Date(review.respondedAt).toLocaleDateString()}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Response Form */}
+                  {respondingTo === review.id && (
+                    <div className="mt-3 p-3 bg-cream-50 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-charcoal-700">Write a Response</p>
+                        <button onClick={() => setRespondingTo(null)} className="text-charcoal-400 hover:text-charcoal-600">
+                          <X size={14} />
+                        </button>
+                      </div>
+                      <textarea
+                        value={responseText}
+                        onChange={(e) => setResponseText(e.target.value)}
+                        className="input-field text-sm"
+                        rows={3}
+                        placeholder="Thank the reviewer for their feedback..."
+                      />
+                      <div className="flex gap-2 justify-end">
+                        <button onClick={() => setRespondingTo(null)} className="btn-ghost text-xs">Cancel</button>
+                        <button
+                          onClick={() => handleRespond(review.id)}
+                          disabled={submitting || !responseText.trim()}
+                          className="btn-primary text-xs flex items-center gap-1"
+                        >
+                          {submitting ? <Loader size={12} className="animate-spin" /> : <Send size={12} />}
+                          Post Response
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

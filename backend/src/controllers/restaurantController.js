@@ -1,4 +1,4 @@
-const { Restaurant, User } = require('../models');
+const { Restaurant, User, Reservation, Dinner, sequelize } = require('../models');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const { Op } = require('sequelize');
@@ -93,4 +93,46 @@ const getMyRestaurant = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, data: restaurant });
 });
 
-module.exports = { getRestaurants, getRestaurant, createRestaurant, updateRestaurant, deleteRestaurant, getMyRestaurant };
+const getRestaurantCustomers = asyncHandler(async (req, res) => {
+  const restaurant = await Restaurant.findOne({ where: { ownerId: req.user.id } });
+  if (!restaurant) throw new AppError('No restaurant profile found.', 404);
+
+  // Get unique users who have reserved at this restaurant
+  const reservations = await Reservation.findAll({
+    where: { restaurantId: restaurant.id },
+    include: [
+      { model: User, as: 'user', attributes: ['id', 'name', 'avatar', 'email'] },
+      { model: Dinner, as: 'dinner', attributes: ['id', 'title', 'date'] },
+    ],
+    order: [['createdAt', 'DESC']],
+  });
+
+  // Aggregate by user
+  const customerMap = {};
+  reservations.forEach((r) => {
+    if (!r.user) return;
+    const uid = r.user.id;
+    if (!customerMap[uid]) {
+      customerMap[uid] = {
+        user: r.user,
+        totalBookings: 0,
+        totalSpent: 0,
+        lastVisit: null,
+        firstVisit: r.createdAt,
+      };
+    }
+    customerMap[uid].totalBookings += 1;
+    customerMap[uid].totalSpent += r.totalPrice || 0;
+    if (!customerMap[uid].lastVisit || r.createdAt > customerMap[uid].lastVisit) {
+      customerMap[uid].lastVisit = r.createdAt;
+    }
+  });
+
+  const customers = Object.values(customerMap).sort(
+    (a, b) => new Date(b.lastVisit) - new Date(a.lastVisit)
+  );
+
+  res.status(200).json({ success: true, data: customers });
+});
+
+module.exports = { getRestaurants, getRestaurant, createRestaurant, updateRestaurant, deleteRestaurant, getMyRestaurant, getRestaurantCustomers };

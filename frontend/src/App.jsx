@@ -26,13 +26,27 @@ import OffersPage from './pages/dashboard/OffersPage';
 import AnalyticsPage from './pages/dashboard/AnalyticsPage';
 import ReviewsPage from './pages/dashboard/ReviewsPage';
 import CollaborationsPage from './pages/dashboard/CollaborationsPage';
+import RestaurantProfilePage from './pages/dashboard/RestaurantProfilePage';
+import CustomersPage from './pages/dashboard/CustomersPage';
+import NotificationsPage from './pages/dashboard/NotificationsPage';
+import SettingsPage from './pages/dashboard/SettingsPage';
 
-// Protected route
-const ProtectedRoute = ({ children, roles }) => {
-  const { user, loading } = useAuth();
+// Protected route with role and creator support
+const ProtectedRoute = ({ children, roles, requireCreator }) => {
+  const { user, loading, isCreator } = useAuth();
   if (loading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
-  if (roles && !roles.includes(user.role)) return <Navigate to="/" replace />;
+  
+  // Check if creator status is required
+  if (requireCreator && !isCreator) {
+    return <Navigate to="/" replace />;
+  }
+  
+  // Check role-based access
+  if (roles && !roles.includes(user.role)) {
+    return <Navigate to="/" replace />;
+  }
+  
   return children;
 };
 
@@ -92,16 +106,17 @@ const App = () => {
         </ProtectedRoute>
       }>
         <Route index element={<DashboardHome />} />
+        <Route path="profile" element={<RestaurantProfilePage />} />
         <Route path="dinners" element={<ManageDinners />} />
         <Route path="reservations" element={<ReservationsPage />} />
         <Route path="offers" element={<OffersPage />} />
+        <Route path="customers" element={<CustomersPage />} />
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="reviews" element={<ReviewsPage />} />
         <Route path="collaborations" element={<CollaborationsPage />} />
-        <Route path="customers" element={<ComingSoon title="Customers" />} />
+        <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="settings" element={<SettingsPage />} />
         <Route path="marketing" element={<ComingSoon title="Marketing Tools" />} />
-        <Route path="payouts" element={<ComingSoon title="Payouts" />} />
-        <Route path="settings" element={<ComingSoon title="Settings" />} />
         <Route path="help" element={<ComingSoon title="Help Center" />} />
       </Route>
 

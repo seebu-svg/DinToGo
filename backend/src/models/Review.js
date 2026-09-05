@@ -64,6 +64,14 @@ const Review = sequelize.define('Review', {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
   },
+  ownerResponse: {
+    type: DataTypes.STRING(1000),
+    allowNull: true,
+  },
+  respondedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
 }, {
   timestamps: true,
   indexes: [

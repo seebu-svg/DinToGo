@@ -45,4 +45,30 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { protect, authorize };
+// Middleware to check if user is a creator (has influencerData)
+const authorizeCreator = (req, res, next) => {
+  if (!req.user || !req.user.influencerData) {
+    return next(
+      new AppError('Only Dining Creators can access this resource.', 403)
+    );
+  }
+  next();
+};
+
+// Middleware to allow specific roles OR creators
+const authorizeRolesOrCreator = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return next(new AppError('Authentication required.', 401));
+    }
+    // Allow if user has one of the specified roles OR is a creator
+    if (roles.includes(req.user.role) || req.user.influencerData) {
+      return next();
+    }
+    return next(
+      new AppError('You do not have permission to access this resource.', 403)
+    );
+  };
+};
+
+module.exports = { protect, authorize, authorizeCreator, authorizeRolesOrCreator };

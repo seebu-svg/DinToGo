@@ -14,18 +14,20 @@ const seed = async () => {
     await sequelize.sync({ force: true });
     console.log('Cleared existing data');
 
-    // Create users
-    const customers = await User.bulkCreate([
-      { name: 'Alice Johnson', email: 'alice@dintogo.com', password: 'password123', role: 'customer', bio: 'Food lover and travel enthusiast', location: { city: 'New York', country: 'US' }, dietaryPreferences: ['Vegetarian'] },
-      { name: 'Bob Chen', email: 'bob@dintogo.com', password: 'password123', role: 'customer', bio: 'Always looking for the next great meal', location: { city: 'San Francisco', country: 'US' } },
-      { name: 'Carla Smith', email: 'carla@dintogo.com', password: 'password123', role: 'customer', location: { city: 'Miami', country: 'US' } },
+    // Create users — 'user' is the default role; influencers are users who've earned trust
+    const regularUsers = await User.bulkCreate([
+      { name: 'Alice Johnson', email: 'alice@dintogo.com', password: 'password123', role: 'user', bio: 'Food lover and travel enthusiast', location: { city: 'New York', country: 'US' }, dietaryPreferences: ['Vegetarian'] },
+      { name: 'Bob Chen', email: 'bob@dintogo.com', password: 'password123', role: 'user', bio: 'Always looking for the next great meal', location: { city: 'San Francisco', country: 'US' } },
+      { name: 'Carla Smith', email: 'carla@dintogo.com', password: 'password123', role: 'user', location: { city: 'Miami', country: 'US' } },
     ], { individualHooks: true });
 
-    const influencers = await User.bulkCreate([
-      { name: 'FoodieJane', email: 'jane@dintogo.com', password: 'password123', role: 'influencer', bio: 'Food & travel content creator with 200K followers', location: { city: 'Los Angeles', country: 'US' }, influencerData: { niche: 'Food & Travel', platform: 'Instagram', audienceSize: 200000, verified: true, inviteCode: 'jane2026', hostedDinners: 12 } },
-      { name: 'ChefMikeReviews', email: 'mike@dintogo.com', password: 'password123', role: 'influencer', bio: 'Professional chef reviewing restaurants worldwide', location: { city: 'New York', country: 'US' }, influencerData: { niche: 'Fine Dining', platform: 'YouTube', audienceSize: 500000, verified: true, inviteCode: 'mike2026', hostedDinners: 8 } },
+    // Dining Creators — users who've built audience & trust (influencerData tracks their status)
+    const creators = await User.bulkCreate([
+      { name: 'FoodieJane', email: 'jane@dintogo.com', password: 'password123', role: 'user', bio: 'Food & travel content creator with 200K followers', location: { city: 'Los Angeles', country: 'US' }, influencerData: { niche: 'Food & Travel', platform: 'Instagram', audienceSize: 200000, verified: true, inviteCode: 'jane2026', hostedDinners: 12 } },
+      { name: 'ChefMikeReviews', email: 'mike@dintogo.com', password: 'password123', role: 'user', bio: 'Professional chef reviewing restaurants worldwide', location: { city: 'New York', country: 'US' }, influencerData: { niche: 'Fine Dining', platform: 'YouTube', audienceSize: 500000, verified: true, inviteCode: 'mike2026', hostedDinners: 8 } },
     ], { individualHooks: true });
 
+    // Restaurant partners — keep 'restaurant' role for venue management
     const restaurantOwners = await User.bulkCreate([
       { name: 'Marco Rossi', email: 'marco@dintogo.com', password: 'password123', role: 'restaurant', bio: 'Owner of Osteria Bella — authentic Italian in SF', location: { city: 'San Francisco', country: 'US' }, restaurantData: { businessName: 'Osteria Bella', cuisine: ['Italian', 'Mediterranean'], address: '456 Mission St, San Francisco', verified: true, rating: 4.7 } },
       { name: 'SkyLounge NYC', email: 'skylounge@dintogo.com', password: 'password123', role: 'restaurant', bio: 'Rooftop dining with stunning Manhattan views', location: { city: 'New York', country: 'US' }, restaurantData: { businessName: 'SkyLounge NYC', cuisine: ['American', 'Fusion'], verified: true, rating: 4.8 } },
@@ -58,18 +60,18 @@ const seed = async () => {
     ]);
 
     // Create follow relationships
-    for (const customer of customers) {
-      for (const influencer of influencers) {
-        await Follow.create({ followerId: customer.id, followingId: influencer.id });
-        await User.increment('followingCount', { where: { id: customer.id } });
-        await User.increment('followerCount', { where: { id: influencer.id } });
+    for (const user of regularUsers) {
+      for (const creator of creators) {
+        await Follow.create({ followerId: user.id, followingId: creator.id });
+        await User.increment('followingCount', { where: { id: user.id } });
+        await User.increment('followerCount', { where: { id: creator.id } });
       }
     }
 
     console.log('Seed data created successfully!');
     console.log('\nTest accounts:');
-    console.log('  Customer:    alice@dintogo.com / password123');
-    console.log('  Influencer:  jane@dintogo.com / password123');
+    console.log('  User:        alice@dintogo.com / password123');
+    console.log('  Creator:     jane@dintogo.com / password123');
     console.log('  Restaurant:  marco@dintogo.com / password123');
     console.log('  Admin:       admin@dintogo.com / password123\n');
 

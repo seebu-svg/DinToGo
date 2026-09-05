@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { UtensilsCrossed, Eye, EyeOff } from 'lucide-react';
 
 const RegisterPage = () => {
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'customer', confirmPassword: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'user', confirmPassword: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
@@ -33,8 +33,7 @@ const RegisterPage = () => {
   };
 
   const roles = [
-    { value: 'customer', label: 'Food Lover', desc: 'Discover and join dinners' },
-    { value: 'influencer', label: 'Influencer', desc: 'Host and promote dinners' },
+    { value: 'user', label: 'Food Lover', desc: 'Discover and join dinners' },
     { value: 'restaurant', label: 'Restaurant', desc: 'Manage your venue & offers' },
   ];
 
@@ -104,7 +103,7 @@ const RegisterPage = () => {
 
             <div>
               <label className="block text-sm font-medium text-charcoal-700 mb-1.5">I am a...</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {roles.map((r) => (
                   <button
                     key={r.value}

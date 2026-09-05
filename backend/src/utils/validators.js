@@ -12,7 +12,7 @@ const registerRules = [
   body('name').trim().notEmpty().withMessage('Name is required').isLength({ max: 80 }),
   body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
   body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
-  body('role').optional().isIn(['customer', 'influencer', 'restaurant', 'admin']).withMessage('Invalid role'),
+  body('role').optional().isIn(['user', 'restaurant', 'admin']).withMessage('Invalid role'),
   handleValidation,
 ];
 

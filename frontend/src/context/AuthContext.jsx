@@ -12,7 +12,7 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('dintogo_token'));
+  const [token, setToken] = useState(sessionStorage.getItem('dintogo_token'));
   const [loading, setLoading] = useState(true);
 
   const loadUser = useCallback(async () => {
@@ -24,8 +24,8 @@ export const AuthProvider = ({ children }) => {
       const { data } = await authAPI.getMe();
       setUser(data.data);
     } catch {
-      localStorage.removeItem('dintogo_token');
-      localStorage.removeItem('dintogo_user');
+      sessionStorage.removeItem('dintogo_token');
+      sessionStorage.removeItem('dintogo_user');
       setToken(null);
       setUser(null);
     } finally {
@@ -40,8 +40,8 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const { data } = await authAPI.login({ email, password });
-      localStorage.setItem('dintogo_token', data.token);
-      localStorage.setItem('dintogo_user', JSON.stringify(data.user));
+      sessionStorage.setItem('dintogo_token', data.token);
+      sessionStorage.setItem('dintogo_user', JSON.stringify(data.user));
       setToken(data.token);
       setUser(data.user);
       toast.success('Welcome back!');
@@ -56,8 +56,8 @@ export const AuthProvider = ({ children }) => {
   const register = async (formData) => {
     try {
       const { data } = await authAPI.register(formData);
-      localStorage.setItem('dintogo_token', data.token);
-      localStorage.setItem('dintogo_user', JSON.stringify(data.user));
+      sessionStorage.setItem('dintogo_token', data.token);
+      sessionStorage.setItem('dintogo_user', JSON.stringify(data.user));
       setToken(data.token);
       setUser(data.user);
       toast.success('Account created successfully!');
@@ -75,8 +75,8 @@ export const AuthProvider = ({ children }) => {
     } catch {
       // silent
     }
-    localStorage.removeItem('dintogo_token');
-    localStorage.removeItem('dintogo_user');
+    sessionStorage.removeItem('dintogo_token');
+    sessionStorage.removeItem('dintogo_user');
     setToken(null);
     setUser(null);
     toast.success('Logged out.');
@@ -94,7 +94,7 @@ export const AuthProvider = ({ children }) => {
 
   const isAuthenticated = !!user && !!token;
   const isRestaurant = user?.role === 'restaurant';
-  const isInfluencer = user?.role === 'influencer';
+  const isCreator = !!user?.influencerData; // Users who've built audience & trust
   const isAdmin = user?.role === 'admin';
 
   return (
@@ -105,7 +105,7 @@ export const AuthProvider = ({ children }) => {
         loading,
         isAuthenticated,
         isRestaurant,
-        isInfluencer,
+        isCreator,
         isAdmin,
         login,
         register,

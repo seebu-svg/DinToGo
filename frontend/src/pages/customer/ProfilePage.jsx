@@ -90,8 +90,8 @@ const ProfilePage = () => {
               )}
               <span className="flex items-center gap-1"><Users size={14} /> {displayUser.followerCount || 0} followers</span>
               <span className="flex items-center gap-1">{displayUser.followingCount || 0} following</span>
-              {displayUser.role === 'influencer' && (
-                <span className="badge-orange">Influencer</span>
+              {displayUser.influencerData && (
+                <span className="badge-orange">Dining Creator</span>
               )}
               {displayUser.role === 'restaurant' && (
                 <span className="badge-charcoal">Restaurant Partner</span>

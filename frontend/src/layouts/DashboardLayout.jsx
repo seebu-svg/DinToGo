@@ -1,23 +1,25 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useState, useEffect } from 'react';
+import { notificationsAPI } from '../services/api';
 import {
   LayoutDashboard, UtensilsCrossed, CalendarCheck, Tag,
   BarChart3, Star, Users, LogOut, ChevronRight, ChevronDown,
-  Bell, Megaphone, CreditCard, Settings, HelpCircle, UserRound,
-  MessageSquare, Zap,
+  Bell, Megaphone, Settings, HelpCircle, UserRound,
+  MessageSquare, Zap, Store,
 } from 'lucide-react';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/dashboard/profile', label: 'Restaurant Profile', icon: Store },
   { to: '/dashboard/dinners', label: 'Dinners', icon: UtensilsCrossed },
   { to: '/dashboard/reservations', label: 'Reservations', icon: CalendarCheck },
   { to: '/dashboard/offers', label: 'Offers & Discounts', icon: Tag },
-  { to: '/dashboard/collaborations', label: 'Influencer Collaborations', icon: Users },
   { to: '/dashboard/customers', label: 'Customers', icon: UserRound },
+  { to: '/dashboard/collaborations', label: 'Creator Collaborations', icon: Users },
   { to: '/dashboard/reviews', label: 'Reviews & Ratings', icon: Star },
   { to: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
-  { to: '/dashboard/marketing', label: 'Marketing Tools', icon: MessageSquare },
-  { to: '/dashboard/payouts', label: 'Payouts', icon: CreditCard },
+  { to: '/dashboard/notifications', label: 'Notifications', icon: Bell },
   { to: '/dashboard/settings', label: 'Settings', icon: Settings },
   { to: '/dashboard/help', label: 'Help Center', icon: HelpCircle },
 ];
@@ -25,6 +27,19 @@ const navItems = [
 const DashboardLayout = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const fetchUnread = async () => {
+      try {
+        const { data } = await notificationsAPI.getAll({ limit: 1, unreadOnly: 'true' });
+        setUnreadCount(data.unreadCount || 0);
+      } catch { /* silent */ }
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 60000); // poll every 60s
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -111,10 +126,12 @@ const DashboardLayout = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <button className="relative p-2 text-charcoal-400 hover:text-charcoal-700 transition-colors">
+            <Link to="/dashboard/notifications" className="relative p-2 text-charcoal-400 hover:text-charcoal-700 transition-colors">
               <Bell size={20} />
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">8</span>
-            </button>
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{unreadCount > 9 ? '9+' : unreadCount}</span>
+              )}
+            </Link>
 
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 font-bold text-sm">
@@ -122,7 +139,7 @@ const DashboardLayout = () => {
               </div>
               <div className="text-left hidden sm:block">
                 <p className="text-sm font-semibold text-charcoal-900 leading-none">{user?.name}</p>
-                <p className="text-[10px] text-charcoal-400">Owner</p>
+                <p className="text-[10px] text-charcoal-400">Restaurant Partner</p>
               </div>
               <ChevronDown size={12} className="text-charcoal-400" />
             </div>
