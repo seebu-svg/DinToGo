@@ -1,6 +1,7 @@
 const { Collaboration, Restaurant, User, Dinner } = require('../models');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+const { createNotification } = require('../utils/createNotification');
 
 const getCollaborations = asyncHandler(async (req, res) => {
   let where = {};
@@ -29,25 +30,48 @@ const getCollaborations = asyncHandler(async (req, res) => {
 });
 
 const createCollaboration = asyncHandler(async (req, res) => {
-  if (req.user.role !== 'restaurant') {
-    throw new AppError('Only restaurant partners can initiate collaborations.', 403);
+  // Allow restaurant owners OR creators to initiate collaborations
+  const isRestaurantOwner = req.user.role === 'restaurant' || req.user.role === 'admin';
+  const isCreator = !!req.user.influencerData;
+
+  if (!isRestaurantOwner && !isCreator) {
+    throw new AppError('Only restaurant partners or creators can initiate collaborations.', 403);
   }
 
-  const restaurant = await Restaurant.findOne({ where: { ownerId: req.user.id } });
-  if (!restaurant) throw new AppError('Restaurant not found.', 404);
+  let restaurant;
+  if (isRestaurantOwner) {
+    restaurant = await Restaurant.findOne({ where: { ownerId: req.user.id } });
+    if (!restaurant) throw new AppError('Restaurant not found.', 404);
+  } else {
+    // Creator initiating — restaurant must be specified
+    restaurant = await Restaurant.findByPk(req.body.restaurantId);
+    if (!restaurant) throw new AppError('Restaurant not found.', 404);
+  }
 
-  const influencer = await User.findByPk(req.body.influencer);
-  if (!influencer || influencer.role !== 'influencer') {
-    throw new AppError('Valid influencer not found.', 404);
+  // The influencer is either the requesting creator or a specified user
+  const influencerId = req.body.influencer || req.user.id;
+  const influencer = await User.findByPk(influencerId);
+  if (!influencer || (!influencer.influencerData && influencer.role !== 'restaurant')) {
+    throw new AppError('Valid creator not found.', 404);
   }
 
   const collab = await Collaboration.create({
     restaurantId: restaurant.id,
-    influencerId: influencer.id,
+    influencerId: influencer.id || req.user.id,
     dinnerId: req.body.dinner || null,
     terms: req.body.terms,
     startDate: req.body.startDate,
     endDate: req.body.endDate,
+  });
+
+  // Notify the influencer about the collaboration invite
+  await createNotification({
+    recipientId: influencer.id,
+    senderId: req.user.id,
+    type: 'influencer_collab',
+    title: 'New Collaboration Invite',
+    message: `${restaurant.name} wants to collaborate with you!`,
+    data: { collaborationId: collab.id, restaurantId: restaurant.id },
   });
 
   res.status(201).json({ success: true, data: collab });

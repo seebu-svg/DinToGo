@@ -1,0 +1,68 @@
+# DinToGo — Render Blueprint
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: dintogo
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm run install:all && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: DB_HOST
+        syncGroup: db
+        property: host
+      - key: DB_PORT
+        syncGroup: db
+        property: port
+      - key: DB_NAME
+        syncGroup: db
+        property: database
+      - key: DB_USER
+        syncGroup: db
+        property: user
+      - key: DB_PASS
+        syncGroup: db
+        property: password
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRE
+        value: 7d
+      - key: JWT_COOKIE_EXPIRE
+        value: 7
+      - key: CLIENT_URL
+        syncGroup: dintogo
+        property: domain
+      - key: CLOUDINARY_CLOUD_NAME
+        required: false
+      - key: CLOUDINARY_API_KEY
+        required: false
+      - key: CLOUDINARY_API_SECRET
+        required: false
+      - key: SMTP_HOST
+        required: false
+      - key: SMTP_PORT
+        required: false
+      - key: SMTP_USER
+        required: false
+      - key: SMTP_PASS
+        required: false
+
+  - type: postgres
+    name: dintogo-db
+    env: postgres
+    plan: free
+    region: oregon
+    syncGroups:
+      - name: db
+        properties:
+          - database
+          - host
+          - password
+          - port
+          - user

@@ -1,6 +1,7 @@
 const { Reservation, Dinner, User, Restaurant } = require('../models');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+const { createNotification } = require('../utils/createNotification');
 const { Op } = require('sequelize');
 
 const createReservation = asyncHandler(async (req, res) => {
@@ -51,6 +52,18 @@ const createReservation = asyncHandler(async (req, res) => {
       { model: Restaurant, as: 'restaurant', attributes: ['id', 'name', 'images'] },
     ],
   });
+
+  // Notify the dinner host about the new reservation
+  if (dinnerDoc.hostId && dinnerDoc.hostId !== req.user.id) {
+    await createNotification({
+      recipientId: dinnerDoc.hostId,
+      senderId: req.user.id,
+      type: 'reservation_confirmed',
+      title: 'New Reservation',
+      message: `${req.user.name} reserved ${partySize} spot${partySize > 1 ? 's' : ''} for "${dinnerDoc.title}"`,
+      data: { dinnerId: dinnerDoc.id, reservationId: reservation.id },
+    });
+  }
 
   res.status(201).json({ success: true, data: populated });
 });

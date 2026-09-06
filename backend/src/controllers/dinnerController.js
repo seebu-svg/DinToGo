@@ -58,6 +58,29 @@ const getDinners = asyncHandler(async (req, res) => {
     offset,
   });
 
+  // Resolve attendee avatars
+  const allAttendeeIds = new Set();
+  dinners.forEach(d => {
+    if (Array.isArray(d.attendees)) {
+      d.attendees.forEach(a => { if (a.userId) allAttendeeIds.add(a.userId); });
+    }
+  });
+  if (allAttendeeIds.size > 0) {
+    const attendeeUsers = await User.findAll({
+      where: { id: [...allAttendeeIds] },
+      attributes: ['id', 'name', 'avatar'],
+    });
+    const userMap = {};
+    attendeeUsers.forEach(u => { userMap[u.id] = { id: u.id, name: u.name, avatar: u.avatar }; });
+    dinners.forEach(d => {
+      d.dataValues.guestAvatars = Array.isArray(d.attendees)
+        ? d.attendees.map(a => userMap[a.userId]).filter(Boolean).slice(0, 5)
+        : [];
+    });
+  } else {
+    dinners.forEach(d => { d.dataValues.guestAvatars = []; });
+  }
+
   res.status(200).json({
     success: true, data: dinners,
     pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / parseInt(limit)) },

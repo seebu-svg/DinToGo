@@ -1,16 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { dinnersAPI, restaurantsAPI, usersAPI } from '../../services/api';
+import { dinnersAPI, restaurantsAPI, usersAPI, resolveImageUrl } from '../../services/api';
 import RestaurantCard from '../../components/RestaurantCard';
 import InfluencerCard from '../../components/InfluencerCard';
 import EmptyState from '../../components/EmptyState';
 import { useAuth } from '../../context/AuthContext';
 import {
-  Search, Home, Compass, UtensilsCrossed, ChefHat, Users, Loader, MapPin,
-  Tag, ChevronRight, ChevronDown, Star, Bookmark,
+  Search, Compass, UtensilsCrossed, ChefHat, Users, Loader, MapPin,
+  Tag, Star, Bookmark,
   Wine, Gift, Calendar, UserCheck, SlidersHorizontal,
-  DollarSign, Sparkles, Plus, MessageCircle, Bell,
-  LayoutGrid, List, MoreHorizontal,
+  DollarSign, Sparkles, MoreHorizontal,
+  LayoutGrid, List, ChevronDown,
 } from 'lucide-react';
 import { format, addDays, startOfDay, endOfDay } from 'date-fns';
 
@@ -108,26 +108,12 @@ const tagColorMap = {
 const DiscoverPage = () => {
   const { user } = useAuth();
   const [tab, setTab] = useState('dinners');
-  const [search, setSearch] = useState('');
   const [dinners, setDinners] = useState([]);
   const [restaurants, setRestaurants] = useState([]);
   const [influencers, setInfluencers] = useState([]);
   const [people, setPeople] = useState([]);
   const [loading, setLoading] = useState(false);
   const [visibleCount, setVisibleCount] = useState(6);
-  const searchRef = useRef(null);
-
-  // ⌘K / Ctrl+K focuses the search bar
-  useEffect(() => {
-    const onKey = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        searchRef.current?.focus();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
 
   // Filter states
   const [filterLocation, setFilterLocation] = useState('Lahore, Pakistan');
@@ -140,24 +126,24 @@ const DiscoverPage = () => {
 
   useEffect(() => {
     fetchData();
-  }, [tab, search]);
+  }, [tab]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const params = { search, limit: 24 };
+      const params = { limit: 24 };
       if (tab === 'dinners') {
         const { data } = await dinnersAPI.getAll(params);
         const items = data.data || [];
         setDinners(items.length > 0 ? items : []);
       } else if (tab === 'restaurants') {
-        const { data } = await restaurantsAPI.getAll({ search, limit: 24 });
+        const { data } = await restaurantsAPI.getAll({ limit: 24 });
         setRestaurants(data.data || []);
       } else if (tab === 'influencers') {
-        const { data } = await usersAPI.getInfluencers({ search, limit: 24 });
+        const { data } = await usersAPI.getInfluencers({ limit: 24 });
         setInfluencers(data.data || []);
       } else if (tab === 'people') {
-        const { data } = await usersAPI.getAll({ search, limit: 24 });
+        const { data } = await usersAPI.getAll({ limit: 24 });
         setPeople(data.data || []);
       }
     } catch {
@@ -175,6 +161,7 @@ const DiscoverPage = () => {
     tagColor: d.isInfluencerHosted ? 'purple' : d.category === 'fine-dining' ? 'orange' : 'orange',
     coverImage: d.coverImage || 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&h=400&fit=crop',
     host: { name: d.host?.name || 'Host', verified: !!d.host?.influencerData, avatar: d.host?.avatar },
+    guestAvatars: d.guestAvatars || [],
     coHosts: [],
     extraGuests: Math.max(0, (d.currentGuests || 1) - 4),
     location: d.location || { venue: 'TBA', city: '' },
@@ -208,165 +195,23 @@ const DiscoverPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-cream-50 flex flex-col">
-      {/* ── Top Bar ── */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-charcoal-100 shadow-[0_1px_2px_rgba(0,0,0,0.03)] shrink-0">
-        <div className="flex items-center gap-3 lg:gap-5 h-16 px-4 lg:px-8">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center shadow-md shadow-brand-500/30 group-hover:scale-105 transition-transform duration-300">
-              <UtensilsCrossed size={18} className="text-white" />
-            </div>
-            <div className="hidden lg:block">
-              <span className="text-lg font-display font-bold text-charcoal-900 leading-none tracking-tight">DinToGo</span>
-              <p className="text-[10px] text-brand-500 font-medium leading-tight mt-0.5">Good Food Is Better Together.</p>
-            </div>
-          </Link>
-
-          <div className="hidden lg:block h-8 w-px bg-charcoal-100 shrink-0" />
-
-          {/* Location */}
-          <button className="hidden md:flex items-center gap-1.5 text-sm font-medium text-charcoal-500 hover:text-charcoal-900 hover:bg-cream-50 px-3 py-2 rounded-full transition-colors shrink-0">
-            <MapPin size={15} className="text-brand-500" /> <span>Lahore, Pakistan</span> <ChevronRight size={12} className="rotate-90 text-charcoal-300" />
+    <div className="px-4 md:px-6 lg:px-8 py-6">
+      {/* Tabs */}
+      <div className="flex items-center gap-6 mb-6 border-b border-charcoal-100">
+        {tabs.map(({ id, label }) => (
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            className={`pb-3 text-sm font-semibold transition-all border-b-2 ${
+              tab === id
+                ? 'border-brand-500 text-brand-600'
+                : 'border-transparent text-charcoal-400 hover:text-charcoal-700'
+            }`}
+          >
+            {label}
           </button>
-
-          {/* Full-width Search */}
-          <div className="flex-1 min-w-0 relative group">
-            <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-charcoal-300 group-focus-within:text-brand-500 transition-colors" />
-            <input
-              ref={searchRef}
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search dinners, restaurants, people, influencers..."
-              className="w-full pl-11 pr-14 md:pr-20 py-2.5 bg-cream-50 border border-charcoal-100 rounded-full text-sm text-charcoal-900 placeholder:text-charcoal-400 focus:outline-none focus:bg-white focus:border-brand-300 focus:ring-4 focus:ring-brand-500/10 transition-all duration-200"
-            />
-            <kbd className="hidden md:flex absolute right-3 top-1/2 -translate-y-1/2 items-center text-[10px] font-semibold text-charcoal-400 bg-white border border-charcoal-100 rounded-md px-1.5 py-0.5 shadow-sm pointer-events-none">⌘K</kbd>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-1.5 lg:gap-2 shrink-0">
-            <Link to="/dinners/create" className="hidden sm:flex items-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-4 lg:px-5 py-2.5 rounded-full shadow-md shadow-brand-500/25 hover:shadow-lg hover:shadow-brand-500/30 hover:-translate-y-0.5 transition-all duration-200">
-              <Plus size={15} /> Create Dinner
-            </Link>
-            <Link to="/messages" className="relative p-2.5 text-charcoal-400 hover:text-charcoal-700 hover:bg-cream-50 rounded-full transition-colors">
-              <MessageCircle size={20} />
-              <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">3</span>
-            </Link>
-            <Link to="/notifications" className="relative p-2.5 text-charcoal-400 hover:text-charcoal-700 hover:bg-cream-50 rounded-full transition-colors">
-              <Bell size={20} />
-              <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">3</span>
-            </Link>
-
-            <div className="hidden sm:block w-px h-6 bg-charcoal-100 mx-0.5" />
-
-            <Link to="/profile" className="flex items-center gap-2 p-1 pr-2.5 rounded-full hover:bg-cream-50 transition-colors shrink-0">
-              <div className="w-9 h-9 rounded-full bg-brand-100 ring-2 ring-white shadow-sm overflow-hidden flex items-center justify-center text-brand-600 text-sm font-bold">
-                {user?.avatar ? (
-                  <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-                ) : (
-                  user?.name?.charAt(0)?.toUpperCase() || 'A'
-                )}
-              </div>
-              <span className="hidden md:block text-sm font-semibold text-charcoal-700 max-w-[120px] truncate">{user?.name || 'Ali Raza'}</span>
-              <ChevronDown size={14} className="hidden md:block text-charcoal-400" />
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      {/* ── 3-Column Layout ── */}
-      <div className="flex-1 flex min-h-0">
-        {/* ── Left Sidebar ── */}
-        <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r border-charcoal-100 bg-white p-4 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
-          <nav className="space-y-1 flex-1">
-            {[
-              { to: '/', label: 'Home', icon: Home },
-              { to: '/discover', label: 'Discover', icon: Compass },
-              { to: '/dinners', label: 'Dinners', icon: UtensilsCrossed },
-              { to: '/people', label: 'People', icon: Users },
-              { to: '/influencers', label: 'Influencers', icon: Star },
-              { to: '/restaurants', label: 'Restaurants', icon: MapPin },
-            ].map(({ to, label, icon: Icon }) => (
-              <Link
-                key={to}
-                to={to}
-                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                  to === '/discover' ? 'bg-brand-50 text-brand-600' : 'text-charcoal-500 hover:text-charcoal-900 hover:bg-cream-50'
-                }`}
-              >
-                <Icon size={18} /> {label}
-              </Link>
-            ))}
-            <div className="border-t border-charcoal-100 my-3" />
-            <Link to="/messages" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-charcoal-500 hover:text-charcoal-900 hover:bg-cream-50 transition-colors">
-              <MessageCircle size={18} /> Messages
-              <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">5</span>
-            </Link>
-            <Link to="/notifications" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-charcoal-500 hover:text-charcoal-900 hover:bg-cream-50 transition-colors">
-              <Bell size={18} /> Notifications
-              <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">3</span>
-            </Link>
-            <Link to="/saved" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-charcoal-500 hover:text-charcoal-900 hover:bg-cream-50 transition-colors">
-              <Bookmark size={18} /> Saved
-            </Link>
-            <Link to="/reviews" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-charcoal-500 hover:text-charcoal-900 hover:bg-cream-50 transition-colors">
-              <Star size={18} /> Reviews
-            </Link>
-            <Link to="/invite" className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-charcoal-500 hover:text-charcoal-900 hover:bg-cream-50 transition-colors">
-              <Sparkles size={18} /> Invite & Earn
-            </Link>
-          </nav>
-
-          <div className="mt-auto space-y-4">
-            {/* User Card */}
-            <div className="flex items-center gap-3 p-3 bg-cream-50 rounded-xl">
-              <div className="w-10 h-10 rounded-full bg-brand-100 overflow-hidden shrink-0">
-                {user?.avatar ? (
-                  <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-brand-600 text-sm font-bold">
-                    {user?.name?.charAt(0)?.toUpperCase() || 'A'}
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-charcoal-900 truncate">{user?.name || 'Ali Raza'}</p>
-                <Link to="/profile" className="text-xs text-brand-500 font-medium hover:underline">View Profile</Link>
-              </div>
-              <button className="text-charcoal-400 hover:text-charcoal-600">
-                <MoreHorizontal size={16} />
-              </button>
-            </div>
-
-            <div className="bg-gradient-to-br from-brand-50 to-cream-100 rounded-2xl p-4 text-center">
-              <Gift size={20} className="text-brand-500 mx-auto mb-2" />
-              <p className="text-xs font-semibold text-charcoal-700 mb-1">Invite your friends</p>
-              <p className="text-[10px] text-charcoal-400 mb-3">Get PKR 200 when they join their first dinner.</p>
-              <button className="w-full bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold py-2 rounded-xl transition-colors">
-                Invite Friends
-              </button>
-            </div>
-          </div>
-        </aside>
-
-        {/* ── Center Content ── */}
-        <main className="flex-1 min-w-0 px-4 md:px-6 lg:px-8 py-6 overflow-y-auto">
-          {/* Tabs */}
-          <div className="flex items-center gap-6 mb-6 border-b border-charcoal-100">
-            {tabs.map(({ id, label }) => (
-              <button
-                key={id}
-                onClick={() => setTab(id)}
-                className={`pb-3 text-sm font-semibold transition-all border-b-2 ${
-                  tab === id
-                    ? 'border-brand-500 text-brand-600'
-                    : 'border-transparent text-charcoal-400 hover:text-charcoal-700'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+        ))}
+      </div>
 
           {/* Filters Row */}
           {tab === 'dinners' && (
@@ -415,64 +260,79 @@ const DiscoverPage = () => {
                 <div>
                   {displayDinners.length > 0 ? (
                     <>
-                      <div className="grid sm:grid-cols-2 gap-5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                         {displayDinners.slice(0, visibleCount).map((d) => (
-                          <Link key={d.id} to={`/dinners/${d.id}`} className="card group block">
+                          <Link key={d.id} to={`/dinners/${d.id}`} className="card group block overflow-hidden">
                             {/* Image */}
-                            <div className="relative aspect-[4/3] overflow-hidden">
+                            <div className="relative aspect-[3/2] overflow-hidden">
                               <img
                                 src={d.coverImage}
                                 alt={d.title}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                              {/* Tag */}
-                              {d.tag && (
-                                <span className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[11px] font-bold ${tagColorMap[d.tagColor] || tagColorMap.orange}`}>
-                                  {d.tag}
-                                </span>
-                              )}
-                              {/* Bookmark */}
-                              <button className="absolute top-3 right-3 w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors">
-                                <Bookmark size={14} className="text-charcoal-500" />
-                              </button>
-                              {/* Avatar stack */}
-                              <div className="absolute bottom-3 left-3 flex items-center">
-                                {d.host?.avatar && (
-                                  <img src={d.host.avatar} alt="" className="w-7 h-7 rounded-full border-2 border-white object-cover" />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+
+                              {/* Top row: Tag + Bookmark */}
+                              <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                                {d.tag && (
+                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase ${tagColorMap[d.tagColor] || tagColorMap.orange}`}>
+                                    {d.tag}
+                                  </span>
                                 )}
-                                {d.coHosts?.slice(0, 3).map((a, i) => (
-                                  <img key={i} src={a} alt="" className="w-7 h-7 rounded-full border-2 border-white object-cover -ml-2" />
+                              </div>
+                              <button
+                                className="absolute top-2.5 right-2.5 w-7 h-7 bg-white/70 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+                                onClick={(e) => e.preventDefault()}
+                              >
+                                <Bookmark size={13} className="text-charcoal-600" />
+                              </button>
+
+                              {/* Price pill */}
+                              {d.price > 0 && (
+                                <div className="absolute bottom-2.5 right-2.5 bg-white/90 backdrop-blur-sm px-2 py-0.5 rounded-full">
+                                  <span className="text-xs font-bold text-charcoal-900">{d.currency || 'Rs.'} {d.price?.toLocaleString()}</span>
+                                </div>
+                              )}
+
+                              {/* Guest avatar stack on image */}
+                              <div className="absolute bottom-2.5 left-2.5 flex items-center -space-x-1.5">
+                                {(d.guestAvatars?.length > 0 ? d.guestAvatars : d.host?.avatar ? [{ avatar: d.host.avatar }] : []).slice(0, 3).map((g, i) => (
+                                  <div key={i} className="w-6 h-6 rounded-full border-2 border-white overflow-hidden bg-brand-100 flex items-center justify-center">
+                                    {g.avatar ? (
+                                      <img src={resolveImageUrl(g.avatar)} alt="" className="w-full h-full object-cover" />
+                                    ) : (
+                                      <span className="text-brand-600 text-[7px] font-bold">{g.name?.charAt(0)?.toUpperCase()}</span>
+                                    )}
+                                  </div>
                                 ))}
                                 {d.extraGuests > 0 && (
-                                  <span className="ml-1 text-white text-[11px] font-semibold drop-shadow-md">+{d.extraGuests}</span>
+                                  <span className="ml-2 text-white text-[10px] font-semibold drop-shadow-md">+{d.extraGuests}</span>
                                 )}
                               </div>
                             </div>
+
                             {/* Info */}
-                            <div className="p-4">
-                              <h3 className="font-semibold text-charcoal-900 text-base mb-1.5 line-clamp-1">{d.title}</h3>
-                              <div className="flex items-center gap-1.5 text-charcoal-400 text-sm mb-2">
-                                <MapPin size={13} />
-                                <span>{d.location?.venue}{d.location?.city ? `, ${d.location.city}` : ''}</span>
+                            <div className="px-3.5 pt-3 pb-3.5">
+                              <h3 className="font-semibold text-charcoal-900 text-sm leading-tight mb-1.5 line-clamp-1 group-hover:text-brand-600 transition-colors">{d.title}</h3>
+
+                              <div className="flex items-center gap-1 text-charcoal-400 text-xs mb-1.5">
+                                <MapPin size={11} className="shrink-0" />
+                                <span className="line-clamp-1">{d.location?.venue}{d.location?.city ? `, ${d.location.city}` : ''}</span>
                               </div>
-                              <div className="flex items-center gap-1.5 text-charcoal-400 text-xs mb-3">
-                                <Calendar size={12} />
-                                <span>{format(new Date(d.date), 'EEE, d MMM')} • {format(new Date(d.date), 'h:mm a')}</span>
+
+                              <div className="flex items-center gap-1 text-charcoal-400 text-xs mb-3">
+                                <Calendar size={11} className="shrink-0" />
+                                <span>{format(new Date(d.date), 'EEE, d MMM')} &middot; {format(new Date(d.date), 'h:mm a')}</span>
                               </div>
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-charcoal-500 font-medium">{d.seatsLeft} Seats Left</span>
-                                <span className="font-bold text-charcoal-900">{d.currency || 'Rs.'} {d.price?.toLocaleString()}</span>
-                              </div>
-                              <div className="flex items-center justify-between mt-3 pt-3 border-t border-charcoal-50">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-xs text-charcoal-400">Hosted by</span>
-                                  <span className="text-xs font-semibold text-charcoal-700">@{d.host?.name}</span>
-                                  {d.host?.verified && <UserCheck size={11} className="text-blue-500" />}
-                                </div>
-                                <span className="flex items-center gap-1">
-                                  <Star size={13} className="text-brand-500 fill-brand-500" />
-                                  <span className="font-semibold text-charcoal-800 text-sm">{d.rating}</span>
+
+                              {/* Bottom row: Seats + Rating */}
+                              <div className="flex items-center justify-between pt-2.5 border-t border-charcoal-50">
+                                <span className={`text-xs font-medium ${d.seatsLeft <= 5 ? 'text-red-500' : 'text-charcoal-500'}`}>
+                                  {d.seatsLeft} {d.seatsLeft === 1 ? 'seat' : 'seats'} left
+                                </span>
+                                <span className="flex items-center gap-0.5">
+                                  <Star size={12} className="text-brand-500 fill-brand-500" />
+                                  <span className="text-xs font-semibold text-charcoal-700">{d.rating}</span>
                                 </span>
                               </div>
                             </div>
@@ -568,81 +428,6 @@ const DiscoverPage = () => {
               )}
             </>
           )}
-        </main>
-
-        {/* ── Right Sidebar ── */}
-        <aside className="hidden xl:block w-80 shrink-0 border-l border-charcoal-100 bg-white p-4 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto space-y-6">
-          {/* Popular Influencers */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-charcoal-900">Popular Influencers</h3>
-              <Link to="/influencers" className="text-brand-500 text-xs font-medium hover:underline">View All</Link>
-            </div>
-            <div className="space-y-3">
-              {popularInfluencers.map((inf) => (
-                <div key={inf.id} className="flex items-center gap-3">
-                  <img src={inf.avatar} alt={inf.name} className="w-10 h-10 rounded-full object-cover" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1">
-                      <p className="text-sm font-semibold text-charcoal-900 truncate">{inf.name}</p>
-                      {inf.verified && <UserCheck size={12} className="text-blue-500 shrink-0" />}
-                    </div>
-                    <p className="text-[11px] text-charcoal-400">{inf.role} • {inf.followers} Followers</p>
-                  </div>
-                  <button className="text-brand-500 text-xs font-semibold px-3 py-1 rounded-full border border-brand-200 hover:bg-brand-50 transition-colors">
-                    Follow
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Exclusive Offers */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-charcoal-900">Exclusive Offers For You</h3>
-              <Link to="/discover" className="text-brand-500 text-xs font-medium hover:underline">View All</Link>
-            </div>
-            <div className="space-y-3">
-              {exclusiveOffers.map((o, i) => (
-                <div key={i} className="flex items-start gap-3 p-3 bg-cream-50 rounded-xl">
-                  <div className="w-9 h-9 rounded-xl bg-brand-100 flex items-center justify-center shrink-0">
-                    <o.icon size={16} className="text-brand-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-charcoal-900">{o.title}</p>
-                    <p className="text-xs text-charcoal-500">{o.desc}</p>
-                    <p className="text-[10px] text-charcoal-400 mt-0.5">{o.venue} • Valid till {o.validTill}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Trending Cuisines */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-charcoal-900">Trending Cuisines</h3>
-            </div>
-            <div className="flex items-center gap-4">
-              {trendingCuisines.map(c => (
-                <button key={c.label} className="flex flex-col items-center gap-2 group">
-                  <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-charcoal-100 group-hover:border-brand-400 transition-colors">
-                    <img src={c.img} alt={c.label} className="w-full h-full object-cover" />
-                  </div>
-                  <span className="text-[11px] font-medium text-charcoal-500 group-hover:text-brand-600 transition-colors">{c.label}</span>
-                </button>
-              ))}
-              <button className="flex flex-col items-center gap-2 group">
-                <div className="w-14 h-14 rounded-full bg-charcoal-50 border-2 border-charcoal-100 group-hover:border-brand-400 flex items-center justify-center transition-colors">
-                  <span className="text-charcoal-400 text-lg font-bold">···</span>
-                </div>
-                <span className="text-[11px] font-medium text-charcoal-500">More</span>
-              </button>
-            </div>
-          </div>
-        </aside>
-      </div>
     </div>
   );
 };

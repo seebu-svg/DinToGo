@@ -6,6 +6,7 @@ const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const http = require('http');
+const path = require('path');
 const { Server } = require('socket.io');
 
 const config = require('./config');
@@ -90,6 +91,20 @@ app.get('/api/health', (req, res) => {
 
 // ── API Routes ───────────────────────────────────────────────────────
 app.use('/api', routes);
+
+// ── Serve Uploaded Files ────────────────────────────────────────────
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// ── Serve Frontend Static Files (Production) ────────────────────────
+if (config.env === 'production') {
+  const frontendDist = path.join(__dirname, '../../frontend/dist');
+  app.use(express.static(frontendDist));
+  // SPA fallback — any non-API route serves index.html
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+}
 
 // ── 404 Handler ──────────────────────────────────────────────────────
 app.all('*', (req, res, next) => {

@@ -1,6 +1,7 @@
 const { Review, Dinner, Restaurant, Reservation, User, sequelize } = require('../models');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+const { createNotification } = require('../utils/createNotification');
 const { Op } = require('sequelize');
 
 const getReviews = asyncHandler(async (req, res) => {
@@ -90,6 +91,33 @@ const createReview = asyncHandler(async (req, res) => {
         { rating: Math.round(stats.avgRating * 10) / 10, totalReviews: parseInt(stats.count) },
         { where: { id: restaurant } }
       );
+    }
+  }
+
+  // Notify the dinner host or restaurant owner about the new review
+  if (dinner) {
+    const dinnerDoc = await Dinner.findByPk(dinner, { attributes: ['hostId', 'title'] });
+    if (dinnerDoc && dinnerDoc.hostId !== req.user.id) {
+      await createNotification({
+        recipientId: dinnerDoc.hostId,
+        senderId: req.user.id,
+        type: 'new_review',
+        title: 'New Review',
+        message: `${req.user.name} left a ${rating}-star review on "${dinnerDoc.title}"`,
+        data: { reviewId: review.id, dinnerId: dinner },
+      });
+    }
+  } else if (restaurant) {
+    const restaurantDoc = await Restaurant.findByPk(restaurant, { attributes: ['ownerId', 'name'] });
+    if (restaurantDoc && restaurantDoc.ownerId !== req.user.id) {
+      await createNotification({
+        recipientId: restaurantDoc.ownerId,
+        senderId: req.user.id,
+        type: 'new_review',
+        title: 'New Review',
+        message: `${req.user.name} left a ${rating}-star review on "${restaurantDoc.name}"`,
+        data: { reviewId: review.id, restaurantId: restaurant },
+      });
     }
   }
 

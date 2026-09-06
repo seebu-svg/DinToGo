@@ -135,4 +135,12 @@ const getRestaurantCustomers = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, data: customers });
 });
 
-module.exports = { getRestaurants, getRestaurant, createRestaurant, updateRestaurant, deleteRestaurant, getMyRestaurant, getRestaurantCustomers };
+const updateMyRestaurant = asyncHandler(async (req, res) => {
+  const restaurant = await Restaurant.findOne({ where: { ownerId: req.user.id } });
+  if (!restaurant) throw new AppError('No restaurant profile found.', 404);
+
+  await restaurant.update(req.body);
+  res.status(200).json({ success: true, data: restaurant });
+});
+
+module.exports = { getRestaurants, getRestaurant, createRestaurant, updateRestaurant, deleteRestaurant, getMyRestaurant, updateMyRestaurant, getRestaurantCustomers };

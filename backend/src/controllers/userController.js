@@ -1,6 +1,7 @@
 const { User, Follow } = require('../models');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+const { createNotification } = require('../utils/createNotification');
 const { Op } = require('sequelize');
 
 const getUsers = asyncHandler(async (req, res) => {
@@ -52,6 +53,16 @@ const followUser = asyncHandler(async (req, res) => {
   }
 
   const updatedUser = await User.findByPk(req.user.id);
+
+  // Notify the followed user
+  await createNotification({
+    recipientId: target.id,
+    senderId: req.user.id,
+    type: 'new_follower',
+    title: 'New Follower',
+    message: `${req.user.name} started following you`,
+  });
+
   res.status(200).json({ success: true, message: 'Following.', followingCount: updatedUser.followingCount });
 });
 

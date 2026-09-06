@@ -12,5 +12,6 @@ router.use('/users', require('./users'));
 router.use('/collaborations', require('./collaborations'));
 router.use('/notifications', require('./notifications'));
 router.use('/analytics', require('./analytics'));
+router.use('/uploads', require('./uploads'));
 
 module.exports = router;

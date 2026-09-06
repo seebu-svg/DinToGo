@@ -5,6 +5,7 @@ import { Loader } from 'lucide-react';
 // Layouts
 import CustomerLayout from './layouts/CustomerLayout';
 import DashboardLayout from './layouts/DashboardLayout';
+import InfluencerDashboardLayout from './layouts/InfluencerDashboardLayout';
 
 // Auth Pages
 import LoginPage from './pages/auth/LoginPage';
@@ -17,6 +18,31 @@ import DinnersPage from './pages/customer/DinnersPage';
 import DinnerDetailPage from './pages/customer/DinnerDetailPage';
 import CreateDinnerPage from './pages/customer/CreateDinnerPage';
 import ProfilePage from './pages/customer/ProfilePage';
+import MyDinnersPage from './pages/customer/MyDinnersPage';
+import PeoplePage from './pages/customer/PeoplePage';
+import MessagesPage from './pages/customer/MessagesPage';
+import NotificationsPage from './pages/customer/NotificationsPage';
+import SavedPage from './pages/customer/SavedPage';
+import ReviewsPage from './pages/customer/ReviewsPage';
+import InvitePage from './pages/customer/InvitePage';
+import InfluencersPage from './pages/customer/InfluencersPage';
+import RestaurantsPage from './pages/customer/RestaurantsPage';
+import SettingsPage from './pages/customer/SettingsPage';
+
+// Influencer Pages
+import InfluencerHome from './pages/influencer/InfluencerHome';
+import InfluencerDiscover from './pages/influencer/InfluencerDiscover';
+import InfluencerDinners from './pages/influencer/InfluencerDinners';
+import InfluencerCreateDinner from './pages/influencer/InfluencerCreateDinner';
+import InfluencerPeople from './pages/influencer/InfluencerPeople';
+import InfluencerRestaurants from './pages/influencer/InfluencerRestaurants';
+import InfluencerMessages from './pages/influencer/InfluencerMessages';
+import InfluencerInvitations from './pages/influencer/InfluencerInvitations';
+import InfluencerReviews from './pages/influencer/InfluencerReviews';
+import InfluencerAnalytics from './pages/influencer/InfluencerAnalytics';
+import InfluencerProfile from './pages/influencer/InfluencerProfile';
+import InfluencerNotifications from './pages/influencer/InfluencerNotifications';
+import InfluencerSettings from './pages/influencer/InfluencerSettings';
 
 // Dashboard Pages
 import DashboardHome from './pages/dashboard/DashboardHome';
@@ -24,12 +50,14 @@ import ManageDinners from './pages/dashboard/ManageDinners';
 import ReservationsPage from './pages/dashboard/ReservationsPage';
 import OffersPage from './pages/dashboard/OffersPage';
 import AnalyticsPage from './pages/dashboard/AnalyticsPage';
-import ReviewsPage from './pages/dashboard/ReviewsPage';
+import { default as DashboardReviewsPage } from './pages/dashboard/ReviewsPage';
 import CollaborationsPage from './pages/dashboard/CollaborationsPage';
 import RestaurantProfilePage from './pages/dashboard/RestaurantProfilePage';
 import CustomersPage from './pages/dashboard/CustomersPage';
-import NotificationsPage from './pages/dashboard/NotificationsPage';
-import SettingsPage from './pages/dashboard/SettingsPage';
+import { default as DashboardNotificationsPage } from './pages/dashboard/NotificationsPage';
+import { default as DashboardSettingsPage } from './pages/dashboard/SettingsPage';
+import MarketingToolsPage from './pages/dashboard/MarketingToolsPage';
+import HelpCenterPage from './pages/dashboard/HelpCenterPage';
 
 // Protected route with role and creator support
 const ProtectedRoute = ({ children, roles, requireCreator }) => {
@@ -59,15 +87,7 @@ const LoadingScreen = () => (
   </div>
 );
 
-// Simple placeholder for upcoming pages
-const ComingSoon = ({ title }) => (
-  <div className="flex items-center justify-center py-20">
-    <div className="text-center">
-      <h2 className="text-2xl font-bold text-charcoal-900 mb-2">{title}</h2>
-      <p className="text-charcoal-400 text-sm">This page is coming soon.</p>
-    </div>
-  </div>
-);
+
 
 const App = () => {
   return (
@@ -81,6 +101,9 @@ const App = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/discover" element={<DiscoverPage />} />
         <Route path="/dinners" element={<DinnersPage />} />
+        <Route path="/my-dinners" element={
+          <ProtectedRoute><MyDinnersPage /></ProtectedRoute>
+        } />
         <Route path="/dinners/create" element={
           <ProtectedRoute><CreateDinnerPage /></ProtectedRoute>
         } />
@@ -89,14 +112,36 @@ const App = () => {
           <ProtectedRoute><ProfilePage /></ProtectedRoute>
         } />
         <Route path="/profile/:id" element={<ProfilePage />} />
-        <Route path="/people" element={<ComingSoon title="People" />} />
-        <Route path="/influencers" element={<DiscoverPage />} />
-        <Route path="/restaurants" element={<DiscoverPage />} />
-        <Route path="/messages" element={<ComingSoon title="Messages" />} />
-        <Route path="/notifications" element={<ComingSoon title="Notifications" />} />
-        <Route path="/saved" element={<ComingSoon title="Saved" />} />
-        <Route path="/reviews" element={<ComingSoon title="Reviews" />} />
-        <Route path="/invite" element={<ComingSoon title="Invite & Earn" />} />
+        <Route path="/people" element={<PeoplePage />} />
+        <Route path="/influencers" element={<InfluencersPage />} />
+        <Route path="/restaurants" element={<RestaurantsPage />} />
+        <Route path="/messages" element={<MessagesPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/saved" element={<SavedPage />} />
+        <Route path="/reviews" element={<ReviewsPage />} />
+        <Route path="/invite" element={<InvitePage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+      </Route>
+
+      {/* Influencer Dashboard */}
+      <Route path="/influencer" element={
+        <ProtectedRoute requireCreator>
+          <InfluencerDashboardLayout />
+        </ProtectedRoute>
+      }>
+        <Route index element={<InfluencerHome />} />
+        <Route path="discover" element={<InfluencerDiscover />} />
+        <Route path="dinners" element={<InfluencerDinners />} />
+        <Route path="create-dinner" element={<InfluencerCreateDinner />} />
+        <Route path="people" element={<InfluencerPeople />} />
+        <Route path="restaurants" element={<InfluencerRestaurants />} />
+        <Route path="messages" element={<InfluencerMessages />} />
+        <Route path="invitations" element={<InfluencerInvitations />} />
+        <Route path="reviews" element={<InfluencerReviews />} />
+        <Route path="analytics" element={<InfluencerAnalytics />} />
+        <Route path="profile" element={<InfluencerProfile />} />
+        <Route path="notifications" element={<InfluencerNotifications />} />
+        <Route path="settings" element={<InfluencerSettings />} />
       </Route>
 
       {/* Restaurant Dashboard */}
@@ -112,12 +157,12 @@ const App = () => {
         <Route path="offers" element={<OffersPage />} />
         <Route path="customers" element={<CustomersPage />} />
         <Route path="analytics" element={<AnalyticsPage />} />
-        <Route path="reviews" element={<ReviewsPage />} />
+        <Route path="reviews" element={<DashboardReviewsPage />} />
         <Route path="collaborations" element={<CollaborationsPage />} />
-        <Route path="notifications" element={<NotificationsPage />} />
-        <Route path="settings" element={<SettingsPage />} />
-        <Route path="marketing" element={<ComingSoon title="Marketing Tools" />} />
-        <Route path="help" element={<ComingSoon title="Help Center" />} />
+        <Route path="notifications" element={<DashboardNotificationsPage />} />
+        <Route path="settings" element={<DashboardSettingsPage />} />
+        <Route path="marketing" element={<MarketingToolsPage />} />
+        <Route path="help" element={<HelpCenterPage />} />
       </Route>
 
       {/* 404 fallback */}

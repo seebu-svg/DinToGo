@@ -2,6 +2,24 @@ import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
+// Backend base URL for serving uploaded files (without /api prefix)
+// In dev, VITE_API_URL is '/api' so BACKEND_BASE becomes '' — relative URLs work via proxy.
+// In production, set VITE_API_URL to the full backend URL (e.g. https://api.example.com/api).
+const BACKEND_BASE = import.meta.env.VITE_BACKEND_URL || API_BASE.replace(/\/api\/?$/, '') || '';
+
+/**
+ * Resolve a relative image URL to a full URL
+ * Handles both relative paths (/uploads/...) and absolute URLs
+ */
+export const resolveImageUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  // If we have a backend base URL, prepend it for cross-origin images
+  if (BACKEND_BASE && url.startsWith('/uploads/')) return `${BACKEND_BASE}${url}`;
+  // Otherwise return as-is (works when same-origin or via Vite proxy)
+  return url;
+};
+
 const api = axios.create({
   baseURL: API_BASE,
   headers: { 'Content-Type': 'application/json' },
@@ -63,6 +81,7 @@ export const restaurantsAPI = {
   update: (id, data) => api.put(`/restaurants/${id}`, data),
   delete: (id) => api.delete(`/restaurants/${id}`),
   getMy: () => api.get('/restaurants/my/profile'),
+  updateMy: (data) => api.put('/restaurants/my/profile', data),
   getCustomers: () => api.get('/restaurants/my/customers'),
 };
 
@@ -131,6 +150,29 @@ export const collaborationsAPI = {
 export const analyticsAPI = {
   getRestaurant: (id) => api.get(`/analytics/restaurant/${id}`),
   getDashboard: () => api.get('/analytics/dashboard'),
+};
+
+// ── Uploads ───────────────────────────────────────
+export const uploadsAPI = {
+  uploadSingle: (formData) => api.post('/uploads/single', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  uploadMultiple: (formData) => api.post('/uploads/multiple', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  uploadAvatar: (formData) => api.post('/uploads/avatar', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  uploadCover: (formData) => api.post('/uploads/cover', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  uploadDinnerImages: (formData) => api.post('/uploads/dinner', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  uploadRestaurantImages: (formData) => api.post('/uploads/restaurant', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  deleteImage: (url) => api.delete('/uploads', { data: { url } }),
 };
 
 export default api;

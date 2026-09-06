@@ -2,15 +2,21 @@
   "name": "dintogo",
   "version": "1.0.0",
   "private": true,
-  "description": "DinToGo — Good Food Is Better Together. A MERN Stack social dining platform.",
+  "description": "DinToGo — Good Food Is Better Together. A PERN Stack social dining platform.",
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
     "build": "cd frontend && npm run build",
-    "start": "cd backend && npm start",
-    "seed": "cd backend && npm run seed"
+    "start": "cd backend && NODE_ENV=production npm start",
+    "seed": "cd backend && npm run seed",
+    "db:sync": "cd backend && npm run db:sync",
+    "postinstall": "cd backend && npm install && cd ../frontend && npm install"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

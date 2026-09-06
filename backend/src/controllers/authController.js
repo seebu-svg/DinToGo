@@ -52,7 +52,7 @@ const getMe = asyncHandler(async (req, res) => {
 });
 
 const updateMe = asyncHandler(async (req, res) => {
-  const allowedFields = ['name', 'bio', 'phone', 'avatar', 'location', 'dietaryPreferences'];
+  const allowedFields = ['name', 'bio', 'phone', 'avatar', 'location', 'dietaryPreferences', 'influencerData'];
   const updates = {};
   allowedFields.forEach((field) => {
     if (req.body[field] !== undefined) {
